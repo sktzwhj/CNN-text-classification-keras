@@ -5,9 +5,11 @@ from keras.optimizers import Adam
 from keras.models import Model
 from sklearn.model_selection import train_test_split
 from data_helpers import load_data
+from keras import backend as K
+import pickle
 
 print('Loading data')
-x, y, vocabulary, vocabulary_inv = load_data()
+sentences, x, y, vocabulary, vocabulary_inv = load_data()
 
 # x.shape -> (10662, 56)
 # y.shape -> (10662, 2)
@@ -54,12 +56,28 @@ output = Dense(units=2, activation='softmax')(dropout)
 # this creates a model that includes
 model = Model(inputs=inputs, outputs=output)
 
-checkpoint = ModelCheckpoint('weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
+model.load_weights("weights.008-0.7567.hdf5")
+
+#checkpoint = ModelCheckpoint('weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
 adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
 model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
-print("Traning Model...")
-model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, callbacks=[checkpoint], validation_data=(X_test, y_test))  # starts training
 
+#print("Traning Model...")
+#model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, callbacks=[checkpoint], validation_data=(X_test, y_test))  # starts training
+#print(model.evaluate(X_test, y_test))
+print(model.summary())
+#get the representation of each sentence at different layers
+
+
+inp = model.input                                           # input placeholder
+print(inp.shape, x.shape)
+outputs = [layer.output for layer in model.layers[1:]]          # all layer outputs
+functors = [K.function([inp, K.learning_phase()], [out]) for out in outputs]    # evaluation functions
+representations = []
+for i in range(len(functors)):
+    print('dumping representations for layer {}/{}'.format(i, len(functors)))
+    representations.append(functors[i]([x]))
+pickle.dump(representations, open('text_layer_representations.pkl', 'wb'))
 
 

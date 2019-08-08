@@ -92,7 +92,8 @@ def load_data():
     """
     # Load and preprocess data
     sentences, labels = load_data_and_labels()
+    print(labels)
     sentences_padded = pad_sentences(sentences)
     vocabulary, vocabulary_inv = build_vocab(sentences_padded)
     x, y = build_input_data(sentences_padded, labels, vocabulary)
-    return [x, y, vocabulary, vocabulary_inv]
+    return [sentences, x, y, vocabulary, vocabulary_inv]
